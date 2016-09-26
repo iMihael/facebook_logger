@@ -1,0 +1,9 @@
+{
+    "require": {
+        "silex/silex": "~2.0",
+        "mongodb/mongodb": "^1.0.0"
+    },
+    "require-dev": {
+        "codeception/codeception": "^2.2.4"
+    }
+}
