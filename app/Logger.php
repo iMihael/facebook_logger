@@ -20,7 +20,7 @@ class Logger
         $this->tag = $tag;
 
         if($user = $this->auth()) {
-            $this->parse((string)$user['_id'], $user['chat_id']);
+            $this->parse((string)$user['_id'], $user['user_id']);
         }
     }
 
@@ -37,7 +37,7 @@ class Logger
         return null;
     }
 
-    private function parse($userId, $chatId)
+    private function parse($userId, $facebookUserId)
     {
         $collection = $this->db->selectCollection('request');
 
@@ -52,15 +52,13 @@ class Logger
             'created_at' => new \MongoDB\BSON\UTCDateTime(time()),
         ]);
 
-        (new Telegram())->sendRequest('sendMessage', [
-            'chat_id' => $chatId,
-            'text' => sprintf(
-                "New Request.\nTag: %s\nMethod: %s\nGET: %s\nPOST: %s",
-                $this->tag,
-                $this->request->getMethod(),
-                json_encode($this->request->query->all(), JSON_PRETTY_PRINT),
-                json_encode($this->request->request->all(), JSON_PRETTY_PRINT)
-            )
-        ]);
+        (new Facebook())->sendMessage($facebookUserId, sprintf(
+            "New Request.\nTag: %s\nMethod: %s\nGET: %s\nPOST: %s\nBody: %s",
+            $this->tag,
+            $this->request->getMethod(),
+            json_encode($this->request->query->all(), JSON_PRETTY_PRINT),
+            json_encode($this->request->request->all(), JSON_PRETTY_PRINT),
+            $this->request->getContent()
+        ));
     }
 }

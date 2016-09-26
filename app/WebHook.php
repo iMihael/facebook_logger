@@ -55,7 +55,7 @@ class WebHook
     {
         (new Facebook())
             ->sendMessage(
-                $body,
+                $body['entry'][0]['messaging'][0]['sender']['id'],
                 "/start - regenerate token\n/gettoken - get token\n/gettags - get subscribed tags\n/subscribe - subscribe to tag\n/unsubscribe - unsubscribe from tag\nuri for sending requests: http://f.request.gq/request/<token>/<tag>"
             );
 
@@ -64,11 +64,11 @@ class WebHook
     private function getToken($body)
     {
         $collection = $this->db->selectCollection('user');
-        if($user = $collection->findOne(['user_id' => $body['message']['from']['id']])) {
+        if($user = $collection->findOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ])) {
 
             (new Facebook())
                 ->sendMessage(
-                    $body,
+                    $body['entry'][0]['messaging'][0]['sender']['id'],
                     $user['token']
                 );
         }
@@ -77,12 +77,12 @@ class WebHook
     private function getTags($body)
     {
         $collection = $this->db->selectCollection('user');
-        if($user = $collection->findOne(['user_id' => $body['message']['from']['id']])) {
+        if($user = $collection->findOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ])) {
             $tags = isset($user['tags']) ? (array)$user['tags'] : [];
 
             (new Facebook())
                 ->sendMessage(
-                    $body,
+                    $body['entry'][0]['messaging'][0]['sender']['id'],
                     json_encode($tags)
                 );
         }
@@ -91,13 +91,13 @@ class WebHook
     private function subscribe($body, $matches)
     {
         $collection = $this->db->selectCollection('user');
-        if($user = $collection->findOne(['user_id' => $body['message']['from']['id']])) {
+        if($user = $collection->findOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ])) {
             $tags = isset($user['tags']) ? (array)$user['tags'] : [];
             $tag = trim($matches[1]);
             if(!in_array($tag, $tags)) {
                 $tags[] = $tag;
 
-                $collection->updateOne(['user_id' => $body['message']['from']['id']], [
+                $collection->updateOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ], [
                     '$set' => [
                         'tags' => $tags,
                     ]
@@ -106,7 +106,7 @@ class WebHook
 
             (new Facebook())
                 ->sendMessage(
-                    $body,
+                    $body['entry'][0]['messaging'][0]['sender']['id'],
                     "You are subscribed to tag " . $tag
                 );
         }
@@ -115,14 +115,14 @@ class WebHook
     private function unsubscribe($body, $matches)
     {
         $collection = $this->db->selectCollection('user');
-        if($user = $collection->findOne(['user_id' => $body['message']['from']['id']])) {
+        if($user = $collection->findOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ])) {
             $tags = isset($user['tags']) ? (array)$user['tags'] : [];
             $tag = trim($matches[1]);
             if(in_array($tag, $tags)) {
                 unset($tags[array_search($tag, $tags)]);
                 $tags = array_values($tags);
 
-                $collection->updateOne(['user_id' => $body['message']['from']['id']], [
+                $collection->updateOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ], [
                     '$set' => [
                         'tags' => $tags,
                     ]
@@ -131,7 +131,7 @@ class WebHook
 
             (new Facebook())
                 ->sendMessage(
-                    $body,
+                    $body['entry'][0]['messaging'][0]['sender']['id'],
                     "You are subscribed from tag " . $tag
                 );
         }
@@ -141,30 +141,26 @@ class WebHook
     {
         $token = sha1(mt_rand(0, 100) . time());
         $collection = $this->db->selectCollection('user');
-        if($user = $collection->findOne(['user_id' => $body['message']['from']['id']])) {
+        if($user = $collection->findOne(['user_id' => $body['entry'][0]['messaging'][0]['sender']['id'] ])) {
             $collection->updateOne([
-                'user_id' => $body['message']['from']['id'],
+                'user_id' => $body['entry'][0]['messaging'][0]['sender']['id'],
             ], [
                 '$set' => [
                     'token' => $token,
-                    'chat_id' => $body['message']['chat']['id'],
                     'updated_at' => new \MongoDB\BSON\UTCDateTime(time()),
                 ],
             ]);
         } else {
             $collection->insertOne([
-                'user_id' => $body['message']['from']['id'],
+                'user_id' => $body['entry'][0]['messaging'][0]['sender']['id'],
                 'token' => $token,
-                'chat_id' => $body['message']['chat']['id'],
                 'updated_at' => new \MongoDB\BSON\UTCDateTime(time()),
-                'first_name' => $body['message']['from']['first_name'],
-                'last_name' => $body['message']['from']['first_name'],
             ]);
         }
 
         (new Facebook())
             ->sendMessage(
-                $body,
+                $body['entry'][0]['messaging'][0]['sender']['id'],
                 "Your new token is $token\nYou can send requests to http://f.request.gq/request/$token/{tag}\nTo receive requests here, you must subscribe to tag using command /subscribe"
             );
     }

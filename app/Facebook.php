@@ -12,13 +12,13 @@ class Facebook
         $this->token = $params['page_token'];
     }
 
-    public function sendMessage($body, $text)
+    public function sendMessage($userId, $text)
     {
-        $id = $body['entry'][0]['messaging'][0]['sender']['id'];
+        //$id = $body['entry'][0]['messaging'][0]['sender']['id'];
 
         $data = [
             'recipient' => [
-                'id' => $id
+                'id' => $userId,
             ],
             'message' => [
                 'text' => $text,

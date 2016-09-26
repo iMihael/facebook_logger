@@ -5,6 +5,7 @@ namespace web;
 use Silex\Application;
 use MongoDB\Client;
 use app\WebHook;
+use app\Logger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,6 +22,13 @@ $db = $client->selectDatabase($mongo['db_name']);
 $app = new Application();
 $app->get('/', function () {
     return 'Hello World';
+});
+
+$app->match('/request/{token}/{tag}', function($token, $tag, Request $request) use ($db) {
+    new Logger($request, $db, $token, $tag);
+    $response = new Response();
+    $response->setStatusCode(204);
+    return $response;
 });
 
 $app->match('/' . $params['webHook'], function(Request $request) use ($db, $params) {
